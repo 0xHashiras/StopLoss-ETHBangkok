@@ -3,7 +3,11 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
   },
   "author": "",
   "license": "ISC",
@@ -11,9 +15,54 @@
   "dependencies": {
     "axios": "^1.7.7",
     "cors": "^2.8.5",
-    "express": "^4.21.1"
+    "express": "^4.21.1",
+    "@biconomy/account": "^4.5.7",
+    "@biconomy/bundler": "^3.1.4",
+    "@biconomy/core-types": "^3.1.4",
+    "@biconomy/paymaster": "^3.1.4",
+    "@dynamic-labs/algorand": "^3.6.2",
+    "@dynamic-labs/bitcoin": "^3.6.2",
+    "@dynamic-labs/cosmos": "^3.6.2",
+    "@dynamic-labs/eclipse": "^4.0.0-alpha.17",
+    "@dynamic-labs/ethereum": "^3.6.2",
+    "@dynamic-labs/flow": "^3.6.2",
+    "@dynamic-labs/sdk-react-core": "^3.6.2",
+    "@dynamic-labs/solana": "^3.6.2",
+    "@dynamic-labs/starknet": "^3.6.2",
+    "@dynamic-labs/wagmi-connector": "^3.6.2",
+    "@radix-ui/react-checkbox": "^1.1.2",
+    "@radix-ui/react-dialog": "^1.1.2",
+    "@radix-ui/react-scroll-area": "^1.2.1",
+    "@radix-ui/react-select": "^2.1.2",
+    "@radix-ui/react-slot": "^1.1.0",
+    "@radix-ui/react-tabs": "^1.1.1",
+    "@radix-ui/react-toast": "^1.2.2",
+    "@tanstack/react-query": "^5.60.2",
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.1.1",
+    "ethers": "^5.7.2",
+    "lottie-react": "^2.4.0",
+    "lucide-react": "^0.456.0",
+    "next": "15.0.3",
+    "pino-pretty": "^13.0.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "recharts": "^2.13.3",
+    "tailwind-merge": "^2.5.4",
+    "tailwindcss-animate": "^1.0.7",
+    "viem": "^2.21.45",
+    "wagmi": "^2.12.33"
+
   },
   "devDependencies": {
-    "@types/express": "^5.0.0"
+    "@types/express": "^5.0.0",
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "eslint": "^8",
+    "eslint-config-next": "15.0.3",
+    "postcss": "^8",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5"
   }
 }
