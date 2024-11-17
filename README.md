@@ -1,5 +1,14 @@
 # StopLoss
 
+- A stop loss order is a tool that automatically sells your selected assets when its price reaches a specified level, called the stop price. 
+
+- This order is used to limit losses and reduce risk exposure
+
+- Deployments :  https://polygonscan.com/address/0x2b3ed52126638c0187e335ea16922c8e2e36e0cf
+    
+
+---
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
