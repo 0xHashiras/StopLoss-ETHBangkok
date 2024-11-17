@@ -11,15 +11,59 @@ import Header from "./Header";
 import AnimatedLoader from "./AnimatedLoader"; // Import your loader
 import animatedData from "../../public/animated.json";
 
-import { polygon, polygonAmoy, mainnet } from "viem/chains"; // Include Ethereum mainnet here
+import {
+  polygon,
+  polygonAmoy, // Mumbai Testnet
+  mainnet, // Ethereum Mainnet
+  arbitrum,
+  arbitrumGoerli,
+  celo,
+  celoAlfajores,
+  sepolia, // Sepolia Testnet
+  hedera,
+  optimism,
+  optimismGoerli,
+  base,
+  baseGoerli,
+  mantle,
+  mantleTestnet,
+} from "viem/chains"; // Import from viem/chains
 
 const config = createConfig({
-  chains: [polygon, polygonAmoy, mainnet], // Added Ethereum mainnet and Polygon networks
+  chains: [
+    polygon, // Polygon Mainnet
+    polygonAmoy, // Polygon Mumbai Testnet
+    mainnet, // Ethereum Mainnet
+    arbitrum, // Arbitrum Mainnet
+    arbitrumGoerli, // Arbitrum Testnet
+    celo, // Celo Mainnet
+    celoAlfajores, // Celo Alfajores Testnet
+    sepolia, // Ethereum Sepolia Testnet
+    hedera, // Hedera Mainnet
+    optimism, // Optimism Mainnet
+    optimismGoerli, // Optimism Testnet
+    base, // Base Mainnet
+    baseGoerli, // Base Testnet
+    mantle, // Mantle Mainnet
+    mantleTestnet, // Mantle Testnet
+  ],
   multiInjectedProviderDiscovery: false,
   transports: {
-    [polygon.id]: http("https://polygon.llamarpc.com"), // Polygon RPC URL
-    [polygonAmoy.id]: http("https://rpc-mumbai.matic.today"), // Mumbai Testnet RPC
-    [mainnet.id]: http("https://ethereum-rpc.publicnode.com"), // Ethereum RPC URL
+    [polygon.id]: http(),
+    [polygonAmoy.id]: http(),
+    [mainnet.id]: http(),
+    [arbitrum.id]: http(),
+    [arbitrumGoerli.id]: http(),
+    [celo.id]: http(),
+    [celoAlfajores.id]: http(),
+    [sepolia.id]: http(), // Sepolia RPC
+    [hedera.id]: http(),
+    [optimism.id]: http(),
+    [optimismGoerli.id]: http(),
+    [base.id]: http(),
+    [baseGoerli.id]: http(),
+    [mantle.id]: http(),
+    [mantleTestnet.id]: http(),
   },
 });
 

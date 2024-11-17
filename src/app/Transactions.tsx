@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   Select,
   SelectContent,
@@ -33,6 +33,7 @@ interface Network {
   chainId: number | null;
   icon: string;
   nativeToken: string;
+  blockscoutDomain: string;
 }
 
 interface Transaction {
@@ -50,15 +51,25 @@ const initialNetworks: Network[] = [
     id: 1,
     name: "Polygon",
     chainId: 137,
-    icon: "/../images/polygon_e.png",
+    icon: "/images/polygon_e.png",
     nativeToken: "MATIC",
+    blockscoutDomain: "polygon.blockscout.com",
+  },
+  {
+    id: 2,
+    name: "Sepolia",
+    chainId: 11155111,
+    icon: "/images/sepolia.svg",
+    nativeToken: "ETH",
+    blockscoutDomain: "eth-sepolia.blockscout.com",
   },
   {
     id: 3,
     name: "Ethereum",
     chainId: 1,
-    icon: "/../images/ETH2.png",
+    icon: "/images/ETH2.png",
     nativeToken: "ETH",
+    blockscoutDomain: "eth.blockscout.com",
   },
 ];
 
@@ -78,10 +89,7 @@ export default function Transactions({ address = "" }: { address?: string }) {
     setLoading(true);
     setError(null);
 
-    const apiUrl =
-      selectedNetwork.name === "Polygon"
-        ? `https://polygon.blockscout.com/api?module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&sort=desc`
-        : `http://localhost:3004/api/eth/transactions?address=${address}`; // Ethereum Blockscout API
+    const apiUrl = `https://${selectedNetwork.blockscoutDomain}/api?module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&sort=desc`;
 
     try {
       const response = await fetch(apiUrl);
@@ -95,7 +103,7 @@ export default function Transactions({ address = "" }: { address?: string }) {
       }
     } catch (err) {
       setError("Failed to fetch transaction history. Please try again.");
-      console.log(err);
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -108,13 +116,21 @@ export default function Transactions({ address = "" }: { address?: string }) {
     setTransactions([]); // Clear transactions when network changes
   };
 
+  const formatValue = (value: string, decimals: number = 18): string => {
+    const formatted = parseFloat(value) / Math.pow(10, decimals);
+    return formatted.toLocaleString(undefined, {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 6,
+    });
+  };
+
   return (
     <div className="container mx-auto p-4">
       <Card className="w-full mx-auto">
         <CardHeader>
           <CardTitle>Network Transaction Viewer</CardTitle>
           <CardDescription>
-            Select a network and view transaction history
+            View transaction history across multiple networks
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -126,7 +142,14 @@ export default function Transactions({ address = "" }: { address?: string }) {
               <SelectContent>
                 {networks.map((network) => (
                   <SelectItem key={network.id} value={network.id.toString()}>
-                    {network.name}
+                    <div className="flex items-center gap-2">
+                      <img
+                        src={network.icon}
+                        alt={network.name}
+                        className="w-4 h-4"
+                      />
+                      {network.name}
+                    </div>
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -142,7 +165,11 @@ export default function Transactions({ address = "" }: { address?: string }) {
               )}
             </Button>
           </div>
-          {error && <p className="text-red-500 mb-4">{error}</p>}
+          {error && (
+            <div className="bg-destructive/15 text-destructive text-sm p-4 rounded-md mb-4">
+              {error}
+            </div>
+          )}
           {transactions.length > 0 && (
             <ScrollArea className="h-[400px] w-full rounded-md border">
               <Table>
@@ -167,11 +194,12 @@ export default function Transactions({ address = "" }: { address?: string }) {
                         {tx.from.slice(0, 6)}...{tx.from.slice(-6)}
                       </TableCell>
                       <TableCell>
-                        {tx.to.slice(0, 6)}...{tx.to.slice(-6)}
+                        {tx.to
+                          ? `${tx.to.slice(0, 6)}...${tx.to.slice(-6)}`
+                          : "Contract Creation"}
                       </TableCell>
                       <TableCell>
-                        {parseFloat(tx.value) / 1e18}{" "}
-                        {selectedNetwork?.nativeToken}
+                        {formatValue(tx.value)} {selectedNetwork?.nativeToken}
                       </TableCell>
                       <TableCell>
                         {new Date(
@@ -182,8 +210,8 @@ export default function Transactions({ address = "" }: { address?: string }) {
                         <span
                           className={`px-2 py-1 rounded-full text-xs font-semibold ${
                             tx.txreceipt_status === "1"
-                              ? "bg-green-100 text-green-800"
-                              : "bg-red-100 text-red-800"
+                              ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                              : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
                           }`}
                         >
                           {tx.txreceipt_status === "1" ? "Success" : "Failed"}
@@ -197,11 +225,7 @@ export default function Transactions({ address = "" }: { address?: string }) {
                           asChild
                         >
                           <a
-                            href={`https://${
-                              selectedNetwork?.name === "Polygon"
-                                ? "polygon"
-                                : "eth"
-                            }.blockscout.com/tx/${tx.hash}`}
+                            href={`https://${selectedNetwork?.blockscoutDomain}/tx/${tx.hash}`}
                             target="_blank"
                             rel="noopener noreferrer"
                           >

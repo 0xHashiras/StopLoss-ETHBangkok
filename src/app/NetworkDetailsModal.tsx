@@ -8,6 +8,7 @@ import {
   useChainId,
   useChains,
   useSwitchChain,
+  useReadContract,
 } from "wagmi";
 import { parseEther, formatUnits, isAddress, getAddress } from "viem";
 import axios from "axios";
@@ -64,15 +65,13 @@ interface NetworkDetailsModalProps {
 const NETWORKS = [
   {
     id: 1,
-    chainId: 96,
-
+    chainId: 9,
     contractAddress: "0x...",
     usdtAddress: "0x...",
     roundId: "...",
   },
   {
     id: 2,
-
     chainId: 8453,
     contractAddress: "0x...",
     usdtAddress: "0x...",
@@ -80,7 +79,6 @@ const NETWORKS = [
   },
   {
     id: 3,
-
     chainId: 1,
     contractAddress: "0x...",
     usdtAddress: "0x...",
@@ -88,7 +86,6 @@ const NETWORKS = [
   },
   {
     id: 4,
-
     chainId: 42220,
     contractAddress: "0x...",
     usdtAddress: "0x...",
@@ -96,7 +93,6 @@ const NETWORKS = [
   },
   {
     id: 5,
-
     chainId: 2442,
     contractAddress: "0x...",
     usdtAddress: "0x...",
@@ -104,15 +100,20 @@ const NETWORKS = [
   },
   {
     id: 6,
-
     chainId: 137,
-    contractAddress: "0xC859C455277100f20ABF80be4942D62A87bF8681",
+    contractAddress: "0xe74991308cb61c5e72d9be8ed4a9233f98eb7f4a",
     usdtAddress: "0xc2132d05d31c914a87c6611c10748aeb04b58e8f",
     roundId: "18446744073709569269",
   },
   {
+    id: 15,
+    chainId: 11155111,
+    contractAddress: "0x...",
+    usdtAddress: "0x...",
+    roundId: "...",
+  },
+  {
     id: 7,
-
     chainId: 12,
     contractAddress: "0x...",
     usdtAddress: "0x...",
@@ -120,7 +121,6 @@ const NETWORKS = [
   },
   {
     id: 8,
-
     chainId: 101,
     contractAddress: "0x...",
     usdtAddress: "0x...",
@@ -128,7 +128,6 @@ const NETWORKS = [
   },
   {
     id: 9,
-
     chainId: 42161,
     contractAddress: "0x...",
     usdtAddress: "0x...",
@@ -189,17 +188,31 @@ const CONTRACT_ABI = [
       { internalType: "uint24", name: "fee", type: "uint24" },
       { internalType: "address", name: "recipient", type: "address" },
       { internalType: "uint256", name: "amountIn", type: "uint256" },
-      { internalType: "uint256", name: "amountOutMinimum", type: "uint256" },
       { internalType: "uint256", name: "deadline", type: "uint256" },
+      {
+        internalType: "uint256",
+        name: "chroniclePairIndex",
+        type: "uint256",
+      },
       {
         internalType: "uint256",
         name: "chainlink_compare_roundid",
         type: "uint256",
       },
     ],
-    name: "executestoploss",
+    name: "executeStopLoss",
     outputs: [{ internalType: "uint256", name: "amountOut", type: "uint256" }],
     stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "address", name: "user", type: "address" }],
+    name: "getTokenAndThresholdByIndex",
+    outputs: [
+      { internalType: "address[]", name: "tokens", type: "address[]" },
+      { internalType: "uint256[]", name: "thresholds", type: "uint256[]" },
+    ],
+    stateMutability: "view",
     type: "function",
   },
 ] as const;
@@ -215,6 +228,9 @@ export default function EnhancedNetworkDetailsModal({
   const [profitLossData, setProfitLossData] = useState<(number | "N/A")[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [thresholds, setThresholds] = useState<{ [key: string]: string }>({});
+  const [contractThresholds, setContractThresholds] = useState<{
+    [key: string]: string;
+  }>({});
 
   const { address } = useAccount();
   const chainId = useChainId();
@@ -222,6 +238,14 @@ export default function EnhancedNetworkDetailsModal({
   const { switchChain } = useSwitchChain();
 
   const { writeContract, data: hash } = useWriteContract();
+  const { data: tokenAndThresholdData, isLoading: isLoadingTokenAndThreshold } =
+    useReadContract({
+      address: NETWORKS.find((n) => n.chainId === chainId)
+        ?.contractAddress as `0x${string}`,
+      abi: CONTRACT_ABI,
+      functionName: "getTokenAndThresholdByIndex",
+      args: [address as `0x${string}`],
+    });
 
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
     hash,
@@ -233,6 +257,23 @@ export default function EnhancedNetworkDetailsModal({
     setCurrentStep("select");
     setThresholds({});
   };
+
+  useEffect(() => {
+    if (
+      tokenAndThresholdData &&
+      Array.isArray(tokenAndThresholdData) &&
+      tokenAndThresholdData.length === 2
+    ) {
+      const [tokens, thresholds] = tokenAndThresholdData;
+      const newThresholds: { [key: string]: string } = {};
+
+      tokens.forEach((token, index) => {
+        newThresholds[token] = formatUnits(thresholds[index], 18);
+      });
+
+      setContractThresholds(newThresholds);
+    }
+  }, [tokenAndThresholdData]);
 
   const filteredTokens = network?.tokens?.filter((token) =>
     token.contract_address.toLowerCase().includes(searchTerm.toLowerCase())
@@ -317,7 +358,7 @@ export default function EnhancedNetworkDetailsModal({
       });
       setCurrentStep("explorer");
     } catch (error) {
-      console.error("Error executing transaction:", error);
+      console.log("Error executing transaction:", error);
       // Handle error appropriately in your UI
     }
   };
@@ -345,30 +386,33 @@ export default function EnhancedNetworkDetailsModal({
       const deadline = BigInt(Math.floor(Date.now() / 1000) + 300); // 5 minutes from now
       const chainlink_compare_roundid = BigInt(currentNetwork.roundId);
 
-      // Fetch amountOutMinimum from 1inch API
-      const response = await axios.get(
-        `http://localhost:3004:api/current_value?address=${tokenOut}&chainId=${token.chain_id}`
-      );
-      const amountOutMinimum = parseEther(response.data.value.toString());
+      // // Fetch amountOutMinimum from 1inch API
+      // const response = await axios.get(
+      //   `http://localhost:3004/api/current_value?address=${tokenOut}&chainId=${token.chain_id}`
+      // );
+      // const amountOutMinimum = parseEther(
+      //   response.data.result[2].result[1].value_usd.toString()
+      // );
 
       writeContract({
         address: currentNetwork.contractAddress as `0x${string}`,
         abi: CONTRACT_ABI,
-        functionName: "executestoploss",
+        functionName: "executeStopLoss",
         args: [
           tokenIn,
           tokenOut,
           fee,
           recipient,
           amountIn,
-          amountOutMinimum,
+          // amountOutMinimum,
           deadline,
+          BigInt("0"),
           chainlink_compare_roundid,
         ],
       });
       setCurrentStep("explorer");
     } catch (error) {
-      console.error("Error executing stop loss:", error);
+      console.log("Error executing stop loss:", error);
       // Handle error appropriately in your UI
     }
   };
@@ -382,16 +426,18 @@ export default function EnhancedNetworkDetailsModal({
             const res = await axios.get(
               `http://localhost:3004/api/profit_loss?address=${token.contract_address}&chainId=${token.chain_id}`
             );
-            return parseFloat(res.data.result[1].abs_profit_usd.toFixed(2));
+            return parseFloat(
+              (res.data.result[1].abs_profit_usd / 100).toFixed(2)
+            );
           } catch (error) {
-            console.error("Error fetching profit loss:", error);
+            console.log("Error fetching profit loss:", error);
             return "N/A";
           }
         });
         const results = await Promise.all(promises);
         setProfitLossData(results);
       } catch (error) {
-        console.error("Error fetching profit loss data:", error);
+        console.log("Error fetching profit loss data:", error);
       } finally {
         setIsLoading(false);
       }
@@ -400,6 +446,7 @@ export default function EnhancedNetworkDetailsModal({
     fetchProfitLossData();
   }, [network.tokens]);
 
+  console.log("chainId", chainId, network.chainId);
   const isCorrectNetwork = chainId === network.chainId;
 
   return (
@@ -483,6 +530,7 @@ export default function EnhancedNetworkDetailsModal({
                     <TableHead className="text-blue-400 w-12">Action</TableHead>
                     <TableHead className="text-blue-400">Contract</TableHead>
                     <TableHead className="text-blue-400">Profit/Loss</TableHead>
+                    <TableHead className="text-blue-400">Threshold</TableHead>
                     <TableHead className="text-blue-400">Balance</TableHead>
                     <TableHead className="text-blue-400">Value</TableHead>
                   </TableRow>
@@ -543,6 +591,15 @@ export default function EnhancedNetworkDetailsModal({
                                 profitLossData[index] > 0 ? "+" : ""
                               }${profitLossData[index].toFixed(2)}%`
                             : profitLossData[index]}
+                        </TableCell>
+                        <TableCell className="text-gray-300">
+                          {contractThresholds[token.contract_address]
+                            ? `${(
+                                Number(
+                                  contractThresholds[token.contract_address]
+                                ) * 100
+                              ).toFixed(2)}%`
+                            : "N/A"}
                         </TableCell>
                         <TableCell className="text-gray-300">
                           {token.amount}
